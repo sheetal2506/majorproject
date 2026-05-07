@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vastra Vaani – Image & AI Analysis</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+    }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #a66bff 0%, #5b3dc4 40%, #3b296e 100%);
+      padding: 16px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 960px;
+      background: #ffffff;
+      border-radius: 28px;
+      box-shadow: 0 18px 50px rgba(0,0,0,0.25);
+      padding: 28px 24px;
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 20px;
+    }
+
+    .title { font-size: 24px; font-weight: 700; color: #4b46b5; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #777; margin-bottom: 16px; }
+
+    .photo-box {
+      border-radius: 18px;
+      border: 2px dashed #d1d1ff;
+      background: #faf8ff;
+      min-height: 260px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #userPhoto {
+      max-width: 100%;
+      max-height: 360px;
+      border-radius: 16px;
+      object-fit: contain;
+    }
+
+    .placeholder-msg { font-size: 14px; color: #999; }
+
+    .btn-row { margin-top: 16px; display: flex; gap: 10px; }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-back {
+      background: #f2f2ff;
+      color: #4b46b5;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6b5bff, #9d63ff);
+      color: #fff;
+    }
+
+    .ai-box {
+      margin-top: 6px;
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: #f7f4ff;
+      border: 1px dashed #d1c8ff;
+    }
+
+    .ai-status { font-size: 12px; color: #666; margin-bottom: 6px; }
+
+    .ai-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #f2f2ff;
+      color: #4b46b5;
+      border: 1px solid #e1e1ff;
+    }
+
+    .tag.highlight {
+      background: #ffe0b3;
+      border-color: #ffcc80;
+      color: #c75b12;
+    }
+
+    .section-heading {
+      font-size: 16px;
+      font-weight: 600;
+      margin-top: 10px;
+      margin-bottom: 6px;
+    }
+
+    .text { font-size: 13px; color: #555; line-height: 1.5; }
+
+    ul { margin-left: 16px; font-size: 13px; }
+
+    .hidden { display: none; }
+
+    @media (max-width: 768px) {
+      .card { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- LEFT -->
+  <div>
+    <div class="title">Preview Photo</div>
+    <div class="subtitle">Image selected on tryon.html</div>
+
+    <div class="photo-box">
+     <img id="userPhoto" style="display:none; width:100%; border-radius:10px;">
+<div id="noPhotoMsg">No photo found</div>
+    </div>
+
+    <div class="btn-row">
+      
+      <button class="btn btn-primary" id="analyzeBtn">🔍 Analyze with AI</button>
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div>
+    <div class="title">AI Analysis & Outfit Suggestions</div>
+    <div class="subtitle">Phase-1 Demo Output</div>
+
+    <!-- ✅ AI TAG BOX -->
+    <div class="ai-box">
+      <div id="aiStatus" class="ai-status">
+        Click “Analyze with AI” to detect body shape & skin tone.
+      </div>
+      <div class="ai-tags">
+        <span id="bodyShapeTag" class="tag highlight hidden"></span>
+        <span id="skinToneTag" class="tag highlight hidden"></span>
+        <span id="occasionTag" class="tag highlight hidden"></span>
+      </div>
+    </div>
+
+    
+    
+
+   <div id="resultSection" style="margin-top:20px;"></div>
+
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const userPhoto = document.getElementById("userPhoto");
+    const noPhotoMsg = document.getElementById("noPhotoMsg");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+    const bodyShapeTag = document.getElementById("bodyShapeTag");
+    const aiStatus = document.getElementById("aiStatus");
+    const resultSection = document.getElementById("resultSection");
+
+    // ✅ Load image from localStorage
+    const storedImage = localStorage.getItem("userPhoto");
+
+    console.log("Stored Image:", storedImage);
+
+    if (storedImage) {
+        userPhoto.src = storedImage;
+        userPhoto.style.display = "block";
+        noPhotoMsg.style.display = "none";
+    } else {
+        console.log("No image found");
+    }
+
+    // ✅ Analyze Button Click
+    analyzeBtn.addEventListener("click", () => {
+
+        aiStatus.textContent = "Analyzing...";
+
+        const storedImage = localStorage.getItem("userPhoto");
+        const occasion = localStorage.getItem("occasion") || "casual";
+
+        if (!storedImage) {
+            alert("No image found!");
+            return;
+        }
+
+        fetch('/analyze', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                image: storedImage,
+                occasion: occasion
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            console.log("Response:", data);
+
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            // ✅ Show body type
+            bodyShapeTag.textContent = "Body Shape: " + data.body_type;
+            bodyShapeTag.classList.remove("hidden");
+
+            // ✅ Show results
+            let imagesHTML = data.images.map(img => `
+                <img src="${img}" 
+                style="width:120px; height:120px; margin:8px; border-radius:10px; object-fit:cover;">
+            `).join("");
+
+            resultSection.innerHTML = `
+                <div style="background:#f8f6ff; padding:15px; border-radius:15px;">
+                    <h3>✨ AI Recommendation</h3>
+                    <p><b>Body Type:</b> ${data.body_type}</p>
+                    <p><b>Suggestions:</b> ${data.suggestion.join(", ")}</p>
+                    <p><b>Avoid:</b> ${data.avoid}</p>
+                    <div>${imagesHTML}</div>
+                </div>
+            `;
+
+            aiStatus.textContent = "Analysis Complete";
+
+        })
+        .catch(err => {
+            console.log("ERROR:", err);
+            alert("Something went wrong!");
+        });
+
+    });
+
+});
+</script>
+
+</body>
+</html>
